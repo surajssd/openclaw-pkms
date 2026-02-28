@@ -9,7 +9,7 @@ Field definitions and taxonomy for recall notes.
 | `title`      | string | Descriptive title for the content    |
 | `type`       | enum   | Content category (see values below)  |
 | `summary`    | string | 1-3 sentence summary of the content |
-| `date_saved` | date   | Date the note was saved (YYYY-MM-DD) |
+| `date_saved` | date   | Timestamp when the note was saved (YYYY-MM-DD-HH-MM-SS) |
 
 ## Optional Fields
 

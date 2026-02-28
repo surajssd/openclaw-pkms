@@ -4,7 +4,7 @@
 #
 # Required flags: --title, --type, --summary
 # Optional flags: --author, --source, --genre, --tags (comma-separated),
-#                 --date (YYYY-MM-DD), --body-file <path>, --dir <path>
+#                 --date (YYYY-MM-DD-HH-MM-SS), --body-file <path>, --dir <path>
 #
 # Output: Prints saved filepath to stdout. Exit 0 on success, 1 on error.
 
@@ -96,7 +96,7 @@ mkdir -p "$OUTPUT_DIR"
 
 # ── Set date ─────────────────────────────────────────────────────────────────
 if [[ -z "$DATE" ]]; then
-    DATE="$(date +%Y-%m-%d)"
+    DATE="$(date "+%Y-%m-%d-%H-%M-%S")"
 fi
 
 # ── Slugify title ────────────────────────────────────────────────────────────

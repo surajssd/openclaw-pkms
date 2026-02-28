@@ -1,17 +1,18 @@
 ---
 name: recall
 description: >
-  Save and organize content as structured markdown notes with auto-extracted
+  Save and search/recall content as structured markdown notes with auto-extracted
   metadata. Use when the user wants to save an article, book notes, quote,
-  idea, or any content for later reference. Handles text extraction, tagging,
-  and filing automatically.
+  idea, or any content for later reference. Also use when the user wants to
+  search, find, or recall previously saved notes. Handles text extraction,
+  tagging, filing, and searching automatically.
 metadata:
   author: github.com/surajssd
   version: "0.1"
 allowed-tools: Bash Read Write Edit
 ---
 
-# Recall — Save Content as Structured Notes
+# Recall — Save & Search Structured Notes
 
 When the user wants to save content, follow these three steps. Do NOT ask for
 confirmation — save automatically and report the result.
@@ -102,4 +103,77 @@ Or if accessed via the symlink:
 
 ```
 ~/.claude/skills/recall/scripts/save-note.sh
+```
+
+---
+
+## Searching & Recalling Notes
+
+When the user wants to find, search, or recall previously saved notes, follow
+these four steps:
+
+### Step 1: Determine Search Filters
+
+Translate the user's natural language query into one or more search flags:
+
+- **`--tag <tag>`** — Filter notes that have a specific tag (e.g., "find my AI
+  notes" → `--tag ai`)
+- **`--type <type>`** — Filter by content type (e.g., "show me my recipes" →
+  `--type recipe`)
+- **`--query <text>`** — Case-insensitive full-text search across the entire
+  note (e.g., "anything about neural networks" → `--query "neural networks"`)
+- **`--since <date>`** — Notes saved on or after this date. Supports partial
+  dates (e.g., `--since 2026-02` for all of February 2026)
+- **`--until <date>`** — Notes saved on or before this date. Supports partial
+  dates (e.g., `--until 2026-01` for everything through January 2026)
+
+All filters combine with AND logic. For vague queries, prefer `--query`. To
+browse all saved notes, run the script with no flags.
+
+### Step 2: Call search-notes.sh
+
+Run the search script with the appropriate flags:
+
+```bash
+/Users/suraj/code/git/openclaw-pkms/recall/scripts/search-notes.sh \
+  --tag ai \
+  --type article \
+  --since "2026-02"
+```
+
+Or via the symlink:
+
+```bash
+~/.claude/skills/recall/scripts/search-notes.sh --query "machine learning"
+```
+
+### Step 3: Present Results as Summary List
+
+Display matching notes as a concise list with the key metadata for each note:
+- **Title**
+- **Type**
+- **Date saved**
+- **Tags**
+- **Summary** (one-liner from frontmatter)
+
+If no results are found, tell the user no matching notes were found and suggest
+broadening their search (e.g., fewer filters, different tags, wider date range).
+
+### Step 4: Expand on Request
+
+If the user asks to see the full content of a specific note, use the `Read` tool
+with the `filepath` value from the search results to display the complete note.
+
+### Search Script Location
+
+The search script path is:
+
+```
+/Users/suraj/code/git/openclaw-pkms/recall/scripts/search-notes.sh
+```
+
+Or if accessed via the symlink:
+
+```
+~/.claude/skills/recall/scripts/search-notes.sh
 ```

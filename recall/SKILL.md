@@ -57,15 +57,10 @@ skip this step and omit the `--body-file` flag.
 Run the save script with the extracted metadata. The script lives at
 `scripts/save-note.sh` relative to this skill's directory.
 
-```bash
-SKILL_DIR="$(dirname "$(readlink -f "$0")")"
-```
-
-Use the skill's own directory to locate the script. Build the command with all
-applicable flags:
+Build the command with all applicable flags:
 
 ```bash
-"${SKILL_DIR}/scripts/save-note.sh" \
+scripts/save-note.sh \
   --title "Extracted Title" \
   --type article \
   --summary "1-3 sentence summary" \
@@ -88,22 +83,7 @@ apply. After the script runs:
 - **Very long content:** Always use `--body-file` (never pass body inline).
 - **User provides explicit metadata:** Use their values instead of extracting.
 - **Multiple pieces of content:** Save each one separately with its own call.
-- **URLs as content:** If the user provides a URL, use WebFetch to retrieve the
-  content, then save the extracted text.
-
-## Script Location
-
-The save script path is:
-
-```
-/Users/suraj/code/git/openclaw-pkms/recall/scripts/save-note.sh
-```
-
-Or if accessed via the symlink:
-
-```
-~/.claude/skills/recall/scripts/save-note.sh
-```
+- **URLs as content:** See the "Saving from a URL" section below.
 
 ---
 
@@ -135,16 +115,10 @@ browse all saved notes, run the script with no flags.
 Run the search script with the appropriate flags:
 
 ```bash
-/Users/suraj/code/git/openclaw-pkms/recall/scripts/search-notes.sh \
+scripts/search-notes.sh \
   --tag ai \
   --type article \
   --since "2026-02"
-```
-
-Or via the symlink:
-
-```bash
-~/.claude/skills/recall/scripts/search-notes.sh --query "machine learning"
 ```
 
 ### Step 3: Present Results as Summary List
@@ -164,16 +138,74 @@ broadening their search (e.g., fewer filters, different tags, wider date range).
 If the user asks to see the full content of a specific note, use the `Read` tool
 with the `filepath` value from the search results to display the complete note.
 
-### Search Script Location
+---
 
-The search script path is:
+## Saving from a URL
 
-```
-/Users/suraj/code/git/openclaw-pkms/recall/scripts/search-notes.sh
+When the user provides a URL to save, use the dedicated `scrape-url.sh` script
+to extract clean content. Follow these four steps:
+
+### Step 1: Call scrape-url.sh
+
+Run the scrape script to download and extract the page content:
+
+```bash
+SCRAPED=$(mktemp)
+scripts/scrape-url.sh \
+  --url "https://example.com/article" > "$SCRAPED"
 ```
 
-Or if accessed via the symlink:
+The script outputs clean markdown content to stdout. If it fails (non-zero exit
+code), see the error handling notes below.
 
+### Step 2: Write Output to Temp File
+
+The command in Step 1 already captures the scraped content into `$SCRAPED`. No
+additional work is needed — the temp file is ready for use with `save-note.sh`.
+
+### Step 3: Analyze the Scraped Content
+
+Read the `$SCRAPED` file and extract the following metadata from the content:
+
+- **`title`** — The article/page title.
+- **`type`** — Categorize using the standard types (article, tutorial, etc.).
+- **`summary`** — 1-3 sentence summary of the content.
+- **`author`** — The original author, if identifiable from the content.
+- **`source`** — Use the URL's domain as the source (e.g., `wikipedia.org`,
+  `medium.com`).
+- **`genre`** — Subject area, if applicable.
+- **`tags`** — Relevant descriptive tags for categorization.
+
+If the user provides explicit metadata alongside the URL, use their values
+instead of auto-extracting those fields. Only extract what's missing.
+
+### Step 4: Call save-note.sh
+
+Pass the extracted metadata and the scraped content file to `save-note.sh`:
+
+```bash
+scripts/save-note.sh \
+  --title "Extracted Title" \
+  --type article \
+  --summary "1-3 sentence summary" \
+  --author "Author Name" \
+  --source "example.com" \
+  --genre technology \
+  --tags "tag1,tag2,tag3" \
+  --body-file "$SCRAPED"
 ```
-~/.claude/skills/recall/scripts/search-notes.sh
-```
+
+After the script runs:
+
+1. Clean up the temp file: `rm -f "$SCRAPED"`
+2. Report the saved filepath to the user.
+
+### Error Handling
+
+- **Scrape failure:** If `scrape-url.sh` exits with a non-zero code, tell the
+  user the URL couldn't be scraped and suggest they paste the content directly.
+- **Paywalled or login-required content:** The scrape may return empty or fail.
+  Inform the user that the page appears to be paywalled or require
+  authentication, and ask them to paste the text instead.
+- **User provides explicit metadata:** Always prefer user-provided values. Only
+  auto-extract fields the user didn't supply.
